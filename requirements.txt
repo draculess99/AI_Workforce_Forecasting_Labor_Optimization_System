@@ -1,5 +1,6 @@
 streamlit
 crewai==1.14.4
+
 pandas==2.2.3
 numpy==1.26.4
 scikit-learn
@@ -8,9 +9,13 @@ matplotlib==3.10.6
 plotly
 requests
 python-dotenv==1.2.2
-langchain==0.3.12
-langchain-openai==0.2.12
-langchain-community==0.3.12
+
 openai>=2.3.0,<3.0.0
+google-genai
+
+langchain
+langchain-openai
+langchain-community
+
 faiss-cpu
 pydantic
