@@ -1,0 +1,122 @@
+from crewai import Task
+from agents.executive_agent import executive_agent
+
+
+def build_executive_task(state):
+    forecast_summary = getattr(
+        state,
+        "forecast_summary",
+        "No forecast summary available."
+    )
+
+    staffing_summary = getattr(
+        state,
+        "staffing_summary",
+        "No staffing summary available."
+    )
+
+    cost_summary = getattr(
+        state,
+        "cost_summary",
+        "No cost summary available."
+    )
+
+    cost_results = getattr(
+        state,
+        "cost_results",
+        {}
+    )
+
+    memory_context = getattr(
+        state,
+        "memory_context",
+        "No historical memory available."
+    )
+
+    rag_context = getattr(
+        state,
+        "rag_context",
+        "No RAG context available."
+    )
+
+    return Task(
+        description=f"""
+        You are preparing an executive summary for a warehouse workforce forecasting and labor optimization system.
+        
+        Forecast Summary:
+        {forecast_summary}
+        
+        Staffing Summary:
+        {staffing_summary}
+        
+        Cost Summary:
+        {cost_summary}
+        
+        Cost Results:
+        {cost_results}
+
+        Retrieved Operational Context:
+        {rag_context}
+            
+        Relevant Historical Memory:
+        {memory_context}
+
+ 
+        Write a concise business-facing executive summary for operations leadership.
+        
+        Include:
+        1. Expected demand and labor risk
+        2. VET/VTO/Normal staffing recommendation
+        3. Estimated labor cost impact
+        4. Recommended management action
+        5. Key assumptions and limitations
+
+        Do not say staffing should simply be maintained if VET weeks or VTO weeks are present.
+        If VET weeks are present, recommend preparing extra labor coverage.
+        If VTO weeks are present, recommend planned labor reduction or voluntary time off.
+        If both are present, explain the mixed staffing pattern.
+
+        If VET weeks are greater than zero, do not say only "maintain current staffing levels."
+        Instead, say "maintain baseline staffing while preparing targeted VET coverage."
+        If VTO weeks are greater than zero, mention planned VTO or labor reduction.
+        If both VET and VTO weeks are zero, then it is appropriate to say maintain current staffing levels.
+
+        Use the phrase "workforce readiness" instead of "workforce skills" unless training or skill development is explicitly part of the scenario.
+
+        Use the retrieved operational context to improve explanation quality, but do not invent facts or change the forecast, staffing, or cost calculations.
+        
+        Do not change the forecast, staffing recommendations, or cost calculations.
+        Only explain the results clearly.
+
+        Requirements:
+        - maximum 6 bullet points
+        - executive business language
+        - concise operational tone
+        - avoid filler or repetition
+        - focus on actionable operational insight
+        - highlight staffing risks if present
+        - highlight labor cost concerns if present
+        - mention workforce readiness
+        - mention workload stability
+        - mention operational confidence
+        - reference historical operational similarities if relevant
+        - incorporate workforce staffing intelligence into reasoning
+        - do NOT use numbering
+        - do NOT write long paragraphs
+        - each bullet should be one concise sentence
+        - avoid generic AI phrases
+        - avoid motivational language
+        - avoid speculative recommendations
+        - avoid repeating the same operational insight
+        - prioritize concise executive communication
+
+        The summary should sound like an enterprise warehouse
+        operations intelligence platform used by senior leadership.
+        
+        """,
+                expected_output="""
+        A concise executive summary written in business language for warehouse operations leadership.
+        """,
+        agent=executive_agent
+    )
+

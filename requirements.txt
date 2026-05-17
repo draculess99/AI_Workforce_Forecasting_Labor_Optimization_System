@@ -1,0 +1,15 @@
+streamlit
+pandas==2.2.3
+numpy==1.26.4
+scikit-learn
+xgboost==3.2.0
+matplotlib==3.10.6
+plotly
+requests
+python-dotenv==1.2.2
+langchain==0.3.12
+langchain-openai==0.2.12
+langchain-community==0.3.12
+openai==1.109.1
+faiss-cpu
+pydantic
