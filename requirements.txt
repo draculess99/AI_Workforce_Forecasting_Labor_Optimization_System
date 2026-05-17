@@ -1,4 +1,5 @@
 streamlit
+crewai==1.14.4
 pandas==2.2.3
 numpy==1.26.4
 scikit-learn
