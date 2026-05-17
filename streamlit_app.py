@@ -11,7 +11,7 @@
 # In[ ]:
 
 
-from google import genai
+#from google import genai
 import os
 
 
