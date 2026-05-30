@@ -39,9 +39,29 @@ def build_executive_task(state):
         "No RAG context available."
     )
 
+    vet_weeks = getattr(state, "vet_weeks", 0)
+    vto_weeks = getattr(state, "vto_weeks", 0)
+
     return Task(
         description=f"""
         You are preparing an executive summary for a warehouse workforce forecasting and labor optimization system.
+
+        STRICT GUARDRAILS:
+
+        You are an AI operations decision-support assistant for a warehouse workforce forecasting dashboard.      
+        You may only use the forecast summary, staffing summary, cost summary, cost results, retrieved operational context, and historical memory provided in this task.
+        You must not invent forecast values, labor costs, cost savings, staffing decisions, business causes, company policies, HR rules, or operational facts that are not provided.
+        You must not override the VET, VTO, NORMAL, MIXED, or Maintain Staffing recommendation produced by the forecast model, staffing task, or business rule engine.
+        You must not describe this as an official Amazon system. 
+        You must not provide HR, payroll, legal, medical, safety, or employment-policy advice.
+        If the available information is incomplete, say the explanation is limited by the available forecast data.
+        The final summary is decision-support only and should be reviewed by a human operations manager.
+        You must refer to confidence as an operational confidence score, not as certainty or a guarantee of staffing success.
+        You must not describe estimated labor cost impact as labor savings unless an explicit savings metric is provided in the task input.
+
+        Staffing Signal Counts:
+        - VET Weeks: {vet_weeks}
+        - VTO Weeks: {vto_weeks}
         
         Forecast Summary:
         {forecast_summary}
@@ -92,6 +112,10 @@ def build_executive_task(state):
         - maximum 6 bullet points
         - executive business language
         - concise operational tone
+        - refer to confidence as an "operational confidence score"
+        - do not describe confidence as certainty or a guarantee
+        - avoid phrases like "confidence level in meeting staffing requirements"
+        - if confidence is mentioned, say it supports planning reliability, not guaranteed outcomes
         - avoid filler or repetition
         - focus on actionable operational insight
         - highlight staffing risks if present
@@ -109,6 +133,10 @@ def build_executive_task(state):
         - avoid speculative recommendations
         - avoid repeating the same operational insight
         - prioritize concise executive communication
+        - refer to labor cost as "estimated labor cost impact" unless a separate savings value is explicitly provided
+        - do not describe labor cost impact as "savings" unless the input data explicitly says it is savings
+        - avoid phrases like "potential labor savings" when only estimated cost impact is provided
+        - if discussing VTO, say it may support labor cost control, not guaranteed savings
 
         The summary should sound like an enterprise warehouse
         operations intelligence platform used by senior leadership.
