@@ -14,27 +14,23 @@
 #from google import genai
 import os
 
-
-# In[2]:
-
-
-# os.chdir(r"D:\Work\Springboard\CAPSTONE-Final\TraininData\WORKTRAIN\WalmartBenchmark")
-
-
-# In[ ]:
-
-
 # ==========================================================
 # streamlit_app.py
 # Warehouse Workforce Forecast Dashboard
 # FULL VERSION with SIMPLE + ADVANCED WEEKLY TABLE MODE
 # ==========================================================
-
+import time
 import streamlit as st
 import pandas as pd
 import requests
 import plotly.express as px
+
 from crew_runner import run_operational_crew
+from guardrails import (
+    validate_forecast_payload,
+    validate_staffing_decisions,
+    constrain_ai_summary
+)
 
 # ----------------------------------------------------------
 # PAGE CONFIG
@@ -45,9 +41,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-st.title("AI Workforce Forecasting & Labor Optimization System")
+st.title("AI-Powered Warehouse Workforce Forecasting & VET/VTO Labor Optimization")
 st.caption(
-    "Springboard Data Analytics Capstone Project • Forecasting VET/VTO staffing decisions using XGBoost, LangGraph, RAG, operational memory, and Walmart 2010–2012 retail demand proxy data • By WiL Low • 2026"
+    "Advanced portfolio version of my Springboard VET/VTO capstone, extending the base forecasting project with XGBoost, LangGraph, RAG, operational memory, and AI-assisted labor planning. Built by Wil Low using Walmart 2010–2012 retail demand proxy data to model warehouse workload and staffing decisions."
 )
 
 # -----------------------------------
@@ -552,6 +548,32 @@ RESPONSE REQUIREMENTS
 # ----------------------------------------------------------
 # HELPER FUNCTIONS
 # ----------------------------------------------------------
+
+def display_ai_summary_with_note(ai_summary, status="success"):
+    """
+    Display the AI summary separately from the guardrail note
+    so the disclaimer appears in a different color.
+    """
+
+    note_marker = "Note:"
+
+    if note_marker in ai_summary:
+        main_text, note_text = ai_summary.split(note_marker, 1)
+        main_text = main_text.strip()
+        note_text = note_marker + note_text.strip()
+    else:
+        main_text = ai_summary.strip()
+        note_text = None
+
+    if status == "warning":
+        st.warning(main_text)
+    else:
+        st.success(main_text)
+
+    if note_text:
+        st.info(note_text)
+
+
 def classify_demand_band(result_df):
     peak = result_df["predicted_demand"].max()
     avg = result_df["predicted_demand"].mean()
@@ -843,8 +865,7 @@ else:
             "logistics_stress_pct": edited_df["logistics_stress_pct"].tolist()
         }
     }
-    #st.write(payload["settings"])
-
+    
 # -----------------------------------------
 # OPERATIONAL CONFIDENCE SCORE
 # -----------------------------------------
@@ -896,15 +917,31 @@ primary_risk_value = risk_map[primary_risk]
 run_clicked = st.sidebar.button("🚀 Run Forecast")
 
 if run_clicked:
+    
+    validation = validate_forecast_payload(payload)
+    if not validation["valid"]:
+        st.error("Forecast input failed guardrail validation.")
+        unique_errors = list(dict.fromkeys(validation["errors"]))
+        for error in unique_errors:
+            st.warning(error)
+
+        st.info(
+            "Please correct the scenario input values in the sidebar, then run the forecast again."
+        )
+        
+        st.stop() 
+    
+    safe_payload = validation["safe_payload"]
+    
     try:
         # IMPORTANT:
         # Local:
-        # api_url = "http://localhost:5000/forecast"
+        api_url = "http://localhost:5000/forecast"
         #
         # Docker:
-        api_url = "https://warehouse-backend-n7on.onrender.com/forecast"
+        # api_url = "https://warehouse-backend-n7on.onrender.com/forecast"
 
-        response = requests.post(api_url, json=payload)
+        response = requests.post(api_url, json=safe_payload)
 
         if response.status_code == 200:
             st.success("Forecast Completed")
@@ -915,9 +952,11 @@ if run_clicked:
 
     except requests.exceptions.RequestException as e:
         st.error(f"Could not connect to Flask API: {str(e)}")
+        st.stop()
 
     except Exception as e:
         st.error(f"Application error: {str(e)}")
+        st.stop()
 
     # ------------------------------------------------------
     # BLOCK 2 - DISPLAY SAVED RESULTS
@@ -963,6 +1002,16 @@ if run_clicked:
     st.subheader("Forecast Output")
 
     result_df = pd.DataFrame(data["forecast"])
+
+    forecast_rows = result_df.to_dict(orient="records")
+
+    decision_validation = validate_staffing_decisions(forecast_rows)
+    
+    if not decision_validation["valid"]:
+        st.error("Forecast output failed guardrail validation.")
+        for error in decision_validation["errors"]:
+            st.warning(error)
+        st.stop()
 
     common_layout = dict(
         height=260,
@@ -1132,6 +1181,12 @@ if run_clicked:
         cost_band
     )
 
+    if rec is None:
+        st.warning(
+            "No matching scenario rule was found for this Demand/Stress/Cost combination."
+        )
+        st.stop()
+
     risk_values = {
         "Demand Velocity": abs(velocity_pct),
         "Shipping Delay": abs(shipping_delay_pct),
@@ -1293,7 +1348,14 @@ if run_clicked:
         elif action == "MIXED":
             st.info("🔄 Recommended Action: Mixed Staffing Plan")
         else:
-            st.info("🟦 Recommended Action: Maintain Current Staffing")
+            if vet_weeks > 0 and vto_weeks == 0:
+                st.info("🟦 Recommended Action: Maintain Baseline Staffing + Targeted VET Coverage")
+            elif vto_weeks > 0 and vet_weeks == 0:
+                st.info("🟦 Recommended Action: Maintain Baseline Staffing + Selective VTO")
+            elif vet_weeks > 0 and vto_weeks > 0:
+                st.info("🔄 Recommended Action: Maintain Baseline Staffing + Mixed VET/VTO Plan")
+            else:
+                st.info("🟦 Recommended Action: Maintain Current Staffing")
 
         # Card 5 Peak Week Alert
         peak_row = result_df.loc[result_df["predicted_demand"].idxmax()]
@@ -1316,6 +1378,11 @@ if run_clicked:
 
         with title_col:
             st.markdown("### AI Operational Decision Summary")
+
+        st.info(
+            "This AI summary is a decision-support explanation only. "
+            "It does not override the forecast model, business rules, or human operations judgment."
+        )
 
         # first load or retry
         with st.spinner("Running Multi-Agent Intelligence.."):
@@ -1360,10 +1427,22 @@ if run_clicked:
                 logistics_stress_pct if mode == "Simple Scenario" else edited_df["logistics_stress_pct"].tolist()
             )
             ai_summary = ai_summary.replace(". ", ".\n\n")
-            st.warning(ai_summary)
+            ai_summary = constrain_ai_summary(
+                ai_text=ai_summary,
+                allowed_decisions=["VET", "VTO", "NORMAL", "MIXED"],
+                max_words=180
+            )
+            
+            display_ai_summary_with_note(ai_summary, status="success")
+            
         else:
             ai_summary = ai_summary.replace(". ", ".\n\n")
-            st.success(ai_summary)
+            ai_summary = constrain_ai_summary(
+                ai_text=ai_summary,
+                allowed_decisions=["VET", "VTO", "NORMAL", "MIXED"],
+                max_words=180
+            )
+            display_ai_summary_with_note(ai_summary, status="success")
 
         st.subheader("AI Decision Workflow Architecture")
         
