@@ -8,6 +8,7 @@ matplotlib==3.10.6
 plotly
 requests
 python-dotenv==1.2.2
+gunicorn
 
 crewai==1.14.4
 openai>=2.3.0,<3.0.0
