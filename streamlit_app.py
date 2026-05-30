@@ -939,7 +939,7 @@ if run_clicked:
         # api_url = "http://localhost:5000/forecast"
         #
         # Docker:
-        api_url = "https://outstanding-caring.railway.interna/"
+        api_url = "https://outstanding-caring-production-bdad.up.railway.app/"
 
         response = requests.post(api_url, json=safe_payload)
 
