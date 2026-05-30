@@ -191,7 +191,9 @@ def home():
     return {"message": "Warehouse Forecast API Running"}
 
 
-# In[ ]:
+@app.route("/health", methods=["GET"])
+def health():
+    return {"status": "ok"}
 
 
 # ---------------------------------------------------
