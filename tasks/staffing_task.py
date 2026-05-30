@@ -38,6 +38,31 @@ def build_staffing_task(
         Recommend workforce actions
         and operational staffing strategy.
         
+        STRICT STAFFING GUARDRAILS:
+
+        You may only recommend one of these staffing actions:
+        - VET
+        - VTO
+        - Maintain Staffing
+        
+        Do not recommend layoffs, hiring, mandatory overtime, discipline, HR action, payroll action, legal action, or safety-policy changes.
+        
+        Do not invent staffing values, cost savings, business causes, company policies, or operational facts that are not provided.
+        
+        Base the recommendation only on the provided peak week, total labor cost, stress level, confidence score, primary risk driver, VET weeks, and VTO weeks.
+        
+        If VET Weeks is greater than zero and VTO Weeks is zero, prefer VET.
+
+        If VTO Weeks is greater than zero and VET Weeks is zero, prefer VTO.
+        
+        If both VET Weeks and VTO Weeks are greater than zero and VET Weeks is greater than VTO Weeks, use VET as the Recommended Action and describe the mixed staffing pattern in the Workforce Recommendation field.
+        
+        If both VET Weeks and VTO Weeks are greater than zero and VTO Weeks is greater than VET Weeks, use VTO as the Recommended Action and describe the mixed staffing pattern in the Workforce Recommendation field.
+        
+        If both VET Weeks and VTO Weeks are greater than zero and the counts are equal, use Maintain Staffing as the Recommended Action and describe the mixed staffing pattern in the Workforce Recommendation field.
+        
+        If both VET Weeks and VTO Weeks are zero, use Maintain Staffing.
+        
         You MUST return ONLY the following format.
         
         Do NOT include bullet points.
